@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 
 import ChatHeader from "./ChatHeader";
 import { useAuthStore } from "../store/useAuthStore";
-import { formatMessageTime } from "../lib/utils";
 
 const ChatContainer = () => {
   const {
