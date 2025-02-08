@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import cloudinary from '../lib/cloudinary.js'
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -51,8 +52,8 @@ export const login = async (req, res) => {
     }
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(400).json({ message: "Invalud credentials" });
-    }
+      return res.status(400).json({ message: "Invalid credentials "})
+    }   
 
     generateToken(user._id, res);
     res.status(200).json({
@@ -79,26 +80,27 @@ export const logout = (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
-    const userId = req.user._id;
+    const { name, email, avatar } = req.body;
+    const userId = req.user.id; // Ensure `req.user` exists from `protectRoute`
 
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile pic is required" });
-    }
-
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    // Update the user in the database (assuming Mongoose)
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profilePic: uploadResponse.secure_url },
-      { new: true }
+      { name, email, avatar },
+      { new: true, runValidators: true }
     );
 
-    res.status(200).json(updatedUser);
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "Profile updated", data: updatedUser });
   } catch (error) {
-    console.log("error in update profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error. Please try again." });
   }
 };
+
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);
